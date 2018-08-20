@@ -1,5 +1,3 @@
-from lark import Lark, Transformer, v_args
-
 # Lark and parsing setup
 
 grammar = r'''
@@ -126,11 +124,10 @@ def outtest(t, out={}, tmpkey=0):
             outtest(elem, out, tmpkey)
     else:
         out[tmpkey] = t[:]
-
-    return(out)
+    return out
 
 
 def parsetitle(to_parse):
     title_parser = Lark(grammar, start="_title")
-    out = outtest(title_parser.parse(to_parse)
+    out = outtest(title_parser.parse(to_parse))
     return out
