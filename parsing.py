@@ -1,11 +1,11 @@
+import lark
 # Lark and parsing setup
-
 grammar = r'''
-            _title: "[" ptype  _spacing r_amt _spacing r_loc _spacing  r_gen  _spacing ( r_type ( _spacing? r_misc? ( ")" | "]" )? )? )?
-                 | "[" ptype _spacing p_user _spacing p_amt _spacing p_timing ( ")" | "]" )?
-                 | "[" ptype _spacing u_user _spacing u_loc _spacing u_amt _spacing? u_timing? _spacing? u_misc? ( ")" | "]" )?
-                 | "[" ptype _spacing m_misc
- 
+            _title: "[" REQ  _spacing r_amt _spacing r_loc _spacing  r_gen  _spacing ( r_type ( _spacing? r_misc? ( ")" | "]" )? )? )?
+                 | "[" PAID _spacing p_user _spacing p_amt _spacing p_timing ( ")" | "]" )?
+                 | "[" UNPAID _spacing u_user _spacing u_loc _spacing u_amt _spacing? u_timing? _spacing? u_misc? ( ")" | "]" )?
+                 | "[" META _spacing m_misc
+
         // Post Types
 
              ptype: REQ
@@ -13,18 +13,18 @@ grammar = r'''
                  | UNPAID
                  | META
 
-              REQ: "REQ" | "Req" | "req" 
-             PAID:  "PAID" 
-           UNPAID: "UNPAID" 
+              REQ: "REQ" | "Req" | "req"
+             PAID:  "PAID"
+           UNPAID: "UNPAID"
             META :  "META"
 
 
         // Requests
 
-            r_amt: _cash -> r_amount
+            r_amt: _cash -> r_amt
 
-            r_loc: "#" (/[A-Za-z0-9#]+/ _SPACERS? )+ -> location 
- 
+            r_loc: "#" (/[A-Za-z0-9#]+/ _SPACERS? )+ -> location
+
             r_gen: date? /[A-Za-z0-9\$€£\s\/',.@%+&-]+/? date?      //# /[A-Za-z\$£,][^\)\]]*/? date?
 
            r_type: _w_gobbler
@@ -36,7 +36,7 @@ grammar = r'''
 
            p_user: user
 
-            p_amt: amt
+            p_amt: _amt -> p_amt
 
          p_timing: _w_gobbler
 
@@ -47,7 +47,7 @@ grammar = r'''
 
             u_loc: loc
 
-            u_amt: amt
+            u_amt: _amt -> u_amt
 
            u_misc: _w_gobbler
 
@@ -61,7 +61,7 @@ grammar = r'''
 
         _w_gobbler: /[0-9A-Za-z!\/\s\$'?,.&;-]+/
 
-              amt: _cash /[+]/? ( _cash | /[A-Za-z]+/ )?
+              _amt: _cash /[+]/? ( _cash | /[A-Za-z]+/ )?
 
              date: dnum
                  | dword
@@ -75,15 +75,15 @@ grammar = r'''
                  | "January" | "February" | "March" | "April" | "May" | "June" | "July" | "August" | "September" | "November" | "December"
                  | "jan" | "feb" | "mar" | "apr" | "may" | "jun" | "jul" | "aug" | "sept" | "nov" | "dec"
                  | "january" | "february" | "march" | "april" | "may" | "june" | "july" | "august" | "september" | "november" | "december"
-               yr: /[12][0-9][0-9]?[0-9]?/ 
+               yr: /[12][0-9][0-9]?[0-9]?/
 
 
 
-              loc: "#" (/[A-Za-z.0-9#]+/ _SPACERS? )+ 
+              loc: "#" (/[A-Za-z.0-9#]+/ _SPACERS? )+
 
-           user.2: "/u/" /[A-Za-z0-9_\-]+/
-                 | user_bad
-         user_bad: "u/" /[A-Za-z0-9_\-]+/
+             user: _user_good | _user_bad
+     _user_good.2: "/u/" /[A-Za-z0-9_\-]+/
+        _user_bad: "u/" /[A-Za-z0-9_\-]+/
                  |  "/u" /[A-Za-z0-9_\-]+/
                  |  "/" /[A-Za-z0-9_\-]+/
 
@@ -101,22 +101,20 @@ grammar = r'''
      _spacing_xbad: _bclose? _SPACERS? _bopen?
            _bopen: ( "[" | "(" )
           _bclose: ( "]" | ")" )
- 
+
            STRING: STRING_INNER
            _MONEY: /[$€£]/
          _SPACERS: ("-" | "," | ".")
- 
+
                 %import common.STRING_INNER
                 %import common.INT
                 %import common.WS
                 %ignore WS
                 %ignore "\\u00a3"
                 %ignore "\\u20ac"
- 
-            '''
+'''
 
-
-def outtest(t, out={}, tmpkey=0):
+def outtest(t, out={}, tmpkey='ptype'):
     if isinstance(t, lark.Tree):
         for i, elem in enumerate(t.children):
             if not t.data == "_title":
@@ -128,6 +126,6 @@ def outtest(t, out={}, tmpkey=0):
 
 
 def parsetitle(to_parse):
-    title_parser = Lark(grammar, start="_title")
+    title_parser = lark.Lark(grammar, start="_title")
     out = outtest(title_parser.parse(to_parse))
     return out
