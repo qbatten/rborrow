@@ -1,5 +1,76 @@
+import praw
+import json
+import os
 import lark
-# Lark and parsing setup
+
+
+def getdata(limit=None):
+'''Downloads data from Reddit API using PRAW, parsing titles on the way,
+	and dumps into a JSON as well as returning the dict.
+'''
+# Authenticate then get a subreddit instance.
+    reddit = praw.Reddit(client_id='f_12DlDQXQrIeg',
+                        client_secret='Qx5Dqhp7NxCYeqqIFC6pGXnsYD0',
+                        user_agent='python bot collecting data on rborrow')
+    brw = reddit.subreddit('borrow')
+
+    # Setup
+    results = []
+    i = 0 # Num of comments we've iterated through
+
+
+    # Download and iterate through submissions
+    for post in brw.new(limit=None):
+
+        currPost = {}
+
+        # Parse titles
+        try:
+            tmp = parseTitle(post.title)
+            tmp.update({'parseErr' : False})
+        except Exception as inst:
+            print("Exc! type: " + str(inst))
+            tmp = {'parseErr' : str(inst)}
+        except NameError as inst:
+            print("Exception: " + str(inst))
+            tmp = {'parseErr' : str(inst)}
+        finally:
+            currPost.update(tmp)
+
+        # Add the rest of the values.
+
+        currPost['title'] = post.title
+        currPost['body'] = post.selftext
+        currPost['date'] = post.created_utc
+        if post.author:
+            currPost['author'] = post.author.name
+        else:
+            currPost['author'] = 'deleted'
+        currPost['score'] = post.score
+        currPost['postid'] = post.id
+        currPost['url'] = post.url
+
+        currPost['tcomm'] = []
+
+        # Sort through comments, removing LoansBot and AutoModerator.
+        for top_comment in post.comments.list():
+            try:
+                if not top_comment.author.name == "LoansBot" and not top_comment.author.name == "AutoModerator":
+                    currPost['tcomm'].append({ 'author': top_comment.author.name, 'body': top_comment.body})
+            except:
+                    currPost['tcomm'].append("None")
+
+        results.append(currPost)
+        i += 1
+        print(i)
+
+    # Export our output file.
+    with open('progOut1.txt', 'w') as f:
+        json.dump(results, f, indent=4)
+
+    return results
+
+
 grammar = r'''
             _title: "[" REQ  _spacing r_amt _spacing r_loc _spacing  r_gen  _spacing ( r_type ( _spacing? r_misc? ( ")" | "]" )? )? )?
                  | "[" PAID _spacing p_user _spacing p_amt _spacing p_timing ( ")" | "]" )?
@@ -114,7 +185,9 @@ grammar = r'''
                 %ignore "\\u20ac"
 '''
 
-def outtest(t, out={}, tmpkey='ptype'):
+def treeToDict(t, out={}, tmpkey='ptype'):
+'''Takes our Lark tree and turns it into a useful dict
+'''
     if isinstance(t, lark.Tree):
         for i, elem in enumerate(t.children):
             if not t.data == "_title":
@@ -125,7 +198,26 @@ def outtest(t, out={}, tmpkey='ptype'):
     return out
 
 
-def parsetitle(to_parse):
+def parseTitle(to_parse):
+'''Calls our grammar and parses the title, outputting a Lark tree
+'''
     title_parser = lark.Lark(grammar, start="_title")
     out = outtest(title_parser.parse(to_parse))
     return out
+    
+    
+def readfile(fin="/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/main1.json"):
+''' Generic JSON reader, defaults to calling the file that getdata() outputs
+'''
+
+    with open(fin) as f:
+        vals = json.load(f)
+    return vals
+
+
+def getgraphinmem():
+'''Helper that reads our netdict file (the data translated into a useful dictionary thingie.)
+'''
+    netdict = readfile("/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/netdict1.txt")
+
+    return netdict

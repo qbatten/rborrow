@@ -29,7 +29,7 @@ def make_netdict(dicts):
     return netdict
 
 def load_netdict(netdict):
-    G = nx.Graph()
+    G = nx.DiGraph()
     for loan in netdict:
             G.add_edge(loan['bor'], loan['lend'], amt = loan['amt'])
     return G
