@@ -1,88 +1,14 @@
-import praw
-import json
-import os
 import lark
-
-
-def reddit_api_getdata(limit=None):
-    '''Downloads data from Reddit API using PRAW, parsing titles on the way,
-	and dumps into a JSON as well as returning the dict.
-    '''
-# Authenticate then get a subreddit instance.
-    reddit = praw.Reddit(client_id='f_12DlDQXQrIeg',
-                        client_secret='Qx5Dqhp7NxCYeqqIFC6pGXnsYD0',
-                        user_agent='python bot collecting data on rborrow')
-    brw = reddit.subreddit('borrow')
-
-    # Setup
-    results = []
-    i = 0 # Num of comments we've iterated through
-
-
-    # Download and iterate through submissions
-    for post in brw.new(limit=None):
-
-        currPost = {}
-
-        # Parse titles
-        try:
-            tmp = parseTitle(post.title)
-            tmp.update({'parseErr' : False})
-        except Exception as inst:
-            print("Exc! type: " + str(inst))
-            tmp = {'parseErr' : str(inst)}
-        except NameError as inst:
-            print("Exception: " + str(inst))
-            tmp = {'parseErr' : str(inst)}
-        finally:
-            currPost.update(tmp)
-
-        # Add the rest of the values.
-
-        currPost['title'] = post.title
-        currPost['body'] = post.selftext
-        currPost['date'] = post.created_utc
-        if post.author:
-            currPost['author'] = post.author.name
-        else:
-            currPost['author'] = 'deleted'
-        currPost['score'] = post.score
-        currPost['postid'] = post.id
-        currPost['url'] = post.url
-
-        currPost['tcomm'] = []
-
-        # Sort through comments, removing LoansBot and AutoModerator.
-        for top_comment in post.comments.list():
-            try:
-                if not top_comment.author.name == "LoansBot" and not top_comment.author.name == "AutoModerator":
-                    currPost['tcomm'].append({ 'author': top_comment.author.name, 'body': top_comment.body})
-            except:
-                    currPost['tcomm'].append("None")
-
-        results.append(currPost)
-        i += 1
-        print(i)
-
-    # Export our output file.
-    with open('progOut1.txt', 'w') as f:
-        json.dump(results, f, indent=4)
-
-    return results
+import json
 
 
 grammar = r'''
-            _title: "[" REQ  _spacing r_amt _spacing r_loc _spacing  r_gen  _spacing ( r_type ( _spacing? r_misc? ( ")" | "]" )? )? )?
-                 | "[" PAID _spacing p_user _spacing p_amt _spacing p_timing ( ")" | "]" )?
-                 | "[" UNPAID _spacing u_user _spacing u_loc _spacing u_amt _spacing? u_timing? _spacing? u_misc? ( ")" | "]" )?
-                 | "[" META _spacing m_misc
+            ptype: "["? REQ  _spacing r_amt _spacing r_loc _spacing  r_gen  _spacing ( r_type ( _spacing? r_misc? ( ")" | "]" )? )? )?
+                 | "["? PAID _spacing p_user _spacing p_amt (_spacing (p_timing ( ")" | "]" )?)?)?
+                 | "["? UNPAID _spacing u_user _spacing u_loc _spacing u_amt _spacing? u_timing? _spacing? u_misc? ( ")" | "]" )?
+                 | "["? META _spacing m_misc
 
         // Post Types
-
-             ptype: REQ
-                 | PAID
-                 | UNPAID
-                 | META
 
               REQ: "REQ" | "Req" | "req"
              PAID:  "PAID"
@@ -105,7 +31,7 @@ grammar = r'''
 
         // Paid
 
-           p_user: user
+           p_user: _user
 
             p_amt: _amt -> p_amt
 
@@ -114,7 +40,7 @@ grammar = r'''
 
         // Unpaid
 
-           u_user: user
+           u_user: _user
 
             u_loc: loc
 
@@ -152,7 +78,7 @@ grammar = r'''
 
               loc: "#" (/[A-Za-z.0-9#]+/ _SPACERS? )+
 
-             user: _user_good | _user_bad
+             _user: _user_good | _user_bad
      _user_good.2: "/u/" /[A-Za-z0-9_\-]+/
         _user_bad: "u/" /[A-Za-z0-9_\-]+/
                  |  "/u" /[A-Za-z0-9_\-]+/
@@ -163,7 +89,7 @@ grammar = r'''
 
            _cash.2: _MONEY INT | INT _MONEY
                  |  _cash_bad
-         _cash_bad: /[$£€]/? INT /[€\.-]/? ( /[A-Za-z\-\/,]+/ | /[$£]/? /[0-9\.-]+/ )*
+         _cash_bad: /[$£€]/? INT /[£$€\.-]/? ( /[A-Za-z\-\/,]+/ | /[$£]/? /[0-9\.-]+/ )*
          _spacing: _spacing_ok
                  | _spacing_bad
                  | _spacing_xbad
@@ -190,19 +116,20 @@ def treeToDict(t, out={}, tmpkey='ptype'):
     '''
     if isinstance(t, lark.Tree):
         for i, elem in enumerate(t.children):
-            if not t.data == "_title":
-                tmpkey = t.data
-            outtest(elem, out, tmpkey)
+            tmpkey = t.data
+            treeToDict(elem, out, tmpkey)
+
     else:
         out[tmpkey] = t[:]
+
     return out
 
 
 def parseTitle(to_parse):
     '''Calls our grammar and parses the title, outputting a Lark tree
     '''
-    title_parser = lark.Lark(grammar, start="_title")
-    out = outtest(title_parser.parse(to_parse))
+    title_parser = lark.Lark(grammar, start="ptype")
+    out = treeToDict(title_parser.parse(to_parse), out={})
     return out
 
 
@@ -215,9 +142,48 @@ def readfile(fin="/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/ma
     return vals
 
 
+
 def getgraphinmem():
     '''Helper that reads our netdict file (the data translated into a useful dictionary thingie.)
     '''
     netdict = readfile("/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/netdict1.txt")
 
     return netdict
+
+
+def parse_indict(indict):
+    output = []
+    i = 0
+    for post in indict:
+        i += 1
+        currPost = {}
+
+        # Parse titles
+        try:
+            tmp = parseTitle(post['title'])
+        except Exception as inst:
+           # print(str(i) + " || Exc! type: " + str(inst))
+            tmp = {'parseErr' : str(inst)}
+        else:
+           # print(i)
+            currPost.update({'parseErr' : False})
+        finally:
+            currPost.update(tmp)
+
+        currPost['author'] = post['author']
+        currPost['date'] = post['created_utc']
+        currPost['url'] = post['full_link']
+        currPost['title'] = post['title']
+        if 'selftext' in post:
+            currPost['body'] = post['selftext']
+        else:
+            currPost['body'] = ''
+        currPost['score'] = post['score']
+        currPost['postid'] = post['id']
+
+        if i % 100 == 0:
+            print(i)
+        output.append(currPost)
+    return output
+
+
