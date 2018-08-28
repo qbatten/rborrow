@@ -4,10 +4,10 @@ import os
 import lark
 
 
-def getdata(limit=None):
-'''Downloads data from Reddit API using PRAW, parsing titles on the way,
+def reddit_api_getdata(limit=None):
+    '''Downloads data from Reddit API using PRAW, parsing titles on the way,
 	and dumps into a JSON as well as returning the dict.
-'''
+    '''
 # Authenticate then get a subreddit instance.
     reddit = praw.Reddit(client_id='f_12DlDQXQrIeg',
                         client_secret='Qx5Dqhp7NxCYeqqIFC6pGXnsYD0',
@@ -178,7 +178,7 @@ grammar = r'''
          _SPACERS: ("-" | "," | ".")
 
                 %import common.STRING_INNER
-                %import common.INT
+               %import common.INT
                 %import common.WS
                 %ignore WS
                 %ignore "\\u00a3"
@@ -186,8 +186,8 @@ grammar = r'''
 '''
 
 def treeToDict(t, out={}, tmpkey='ptype'):
-'''Takes our Lark tree and turns it into a useful dict
-'''
+    '''Takes our Lark tree and turns it into a useful dict
+    '''
     if isinstance(t, lark.Tree):
         for i, elem in enumerate(t.children):
             if not t.data == "_title":
@@ -199,16 +199,16 @@ def treeToDict(t, out={}, tmpkey='ptype'):
 
 
 def parseTitle(to_parse):
-'''Calls our grammar and parses the title, outputting a Lark tree
-'''
+    '''Calls our grammar and parses the title, outputting a Lark tree
+    '''
     title_parser = lark.Lark(grammar, start="_title")
     out = outtest(title_parser.parse(to_parse))
     return out
-    
-    
+
+
 def readfile(fin="/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/main1.json"):
-''' Generic JSON reader, defaults to calling the file that getdata() outputs
-'''
+    ''' Generic JSON reader, defaults to calling the file that getdata() outputs
+    '''
 
     with open(fin) as f:
         vals = json.load(f)
@@ -216,8 +216,8 @@ def readfile(fin="/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/ma
 
 
 def getgraphinmem():
-'''Helper that reads our netdict file (the data translated into a useful dictionary thingie.)
-'''
+    '''Helper that reads our netdict file (the data translated into a useful dictionary thingie.)
+    '''
     netdict = readfile("/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/netdict1.txt")
 
     return netdict
