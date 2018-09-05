@@ -5,7 +5,7 @@ import json
 grammar = r'''
             ptype: "["? REQ  _spacing r_amt _spacing r_loc _spacing  r_gen  _spacing ( r_type ( _spacing? r_misc? ( ")" | "]" )? )? )?
                  | "["? PAID _spacing p_user _spacing p_amt (_spacing (p_timing ( ")" | "]" )?)?)?
-                 | "["? UNPAID _spacing u_user _spacing u_loc _spacing u_amt _spacing? u_timing? _spacing? u_misc? ( ")" | "]" )?
+                 | _unpaid
                  | "["? META _spacing m_misc
 
         // Post Types
@@ -15,7 +15,9 @@ grammar = r'''
            UNPAID: "UNPAID"
             META :  "META"
 
-
+            _unpaid: _unpaid_good | _unpaid_bad
+            _unpaid_good.2: "["? UNPAID _spacing u_user _spacing u_amt _spacing (u_loc | u_timing) _spacing? (u_loc | u_timing)? _spacing? u_misc? ( ")" | "]" )?
+                _unpaid_bad: "["? UNPAID _spacing u_user _spacing u_loc _spacing u_amt _spacing? u_timing? _spacing? u_misc? ( ")" | "]" )?
         // Requests
 
             r_amt: _cash -> r_amt
@@ -112,8 +114,7 @@ grammar = r'''
 '''
 
 def treeToDict(t, out={}, tmpkey='ptype'):
-    '''Takes our Lark tree and turns it into a useful dict
-    '''
+    '''Takes our Lark tree and turns it into a useful dict'''
     if isinstance(t, lark.Tree):
         for i, elem in enumerate(t.children):
             tmpkey = t.data
@@ -126,8 +127,7 @@ def treeToDict(t, out={}, tmpkey='ptype'):
 
 
 def parseTitle(to_parse):
-    '''Calls our grammar and parses the title, outputting a Lark tree
-    '''
+    '''Calls our grammar and parses the title, outputting a Lark tree'''
     title_parser = lark.Lark(grammar, start="ptype")
     out = treeToDict(title_parser.parse(to_parse), out={})
     return out
@@ -140,50 +140,3 @@ def readfile(fin="/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/ma
     with open(fin) as f:
         vals = json.load(f)
     return vals
-
-
-
-def getgraphinmem():
-    '''Helper that reads our netdict file (the data translated into a useful dictionary thingie.)
-    '''
-    netdict = readfile("/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/netdict1.txt")
-
-    return netdict
-
-
-def parse_indict(indict):
-    output = []
-    i = 0
-    for post in indict:
-        i += 1
-        currPost = {}
-
-        # Parse titles
-        try:
-            tmp = parseTitle(post['title'])
-        except Exception as inst:
-           # print(str(i) + " || Exc! type: " + str(inst))
-            tmp = {'parseErr' : str(inst)}
-        else:
-           # print(i)
-            currPost.update({'parseErr' : False})
-        finally:
-            currPost.update(tmp)
-
-        currPost['author'] = post['author']
-        currPost['date'] = post['created_utc']
-        currPost['url'] = post['full_link']
-        currPost['title'] = post['title']
-        if 'selftext' in post:
-            currPost['body'] = post['selftext']
-        else:
-            currPost['body'] = ''
-        currPost['score'] = post['score']
-        currPost['postid'] = post['id']
-
-        if i % 100 == 0:
-            print(i)
-        output.append(currPost)
-    return output
-
-
