@@ -5,22 +5,29 @@ from helpers import *
 
 def read_raw():
     '''Helper that reads raw output file (from pushshift)'''
-    inraw = readfile("/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/textfiles/ps_out_raw.json")
+    inraw = readfile("/Users/quinnbatten/Documents/Programming/PyProjects/" +
+                     "rborrow/textfiles/ps_out_raw.json")
 
     return inraw
 
+
 def read_parsed(input='ps_output_parsed'):
-    '''Helper that reads parsed output (either paid or unpaid, adding reqs later maybe if we parse it)'''
+    '''Helper that reads parsed output (either paid or unpaid, adding
+    reqslater maybe if we parse it)'''
     if not (input == 'paid' or input == 'unpaid'):
         print("please specify paid or unpaid")
         indict = 0
     else:
-        indict = readfile("/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/textfiles/" + input + ".json")
+        indict = readfile("/Users/quinnbatten/Documents/Programming/" +
+                          "PyProjects/rborrow/textfiles/" + input + ".json")
     return indict
 
+
 def read_netdict(input="netdict1"):
-    '''Helper that reads our netdict file (parsed output that got translated into a useful list of dictionaryies by parse_indict.)'''
-    netdict = readfile("/Users/quinnbatten/Documents/Programming/PyProjects/rborrow/" + input + ".json")
+    '''Helper that reads our netdict file (parsed output that got translated
+       into a useful list of dictionaryies by parse_indict.)'''
+    netdict = readfile("/Users/quinnbatten/Documents/Programming/" +
+                       "PyProjects/rborrow/textfiles/" + input + ".json")
     return netdict
 
 
@@ -33,12 +40,14 @@ def parse_indict(indict):
         currPost = {}
 
         # Parse titles
+        success = 0
         try:
             tmp = parseTitle(post['title'])
+            success = 1
         except Exception as inst:
-            tmp = {'parseErr' : str(inst)}
+            try: tmp = parse_title_fallback(post['title'])
         else:
-            currPost.update({'parseErr' : False})
+            currPost.update({'parseErr': False})
         finally:
             currPost.update(tmp)
 
@@ -64,7 +73,10 @@ def parse_indict(indict):
 
 
 def make_netdict(dicts, post_type='paid'):
-    '''Makes a netdict given a parsed output dictionary (from parse_indict). A netdict is a simpler dictionary with only the info we're interested in.'''
+    '''Makes a netdict given a parsed output dictionary (from parse_indict).
+    A netdict is a simpler dictionary with only the info we're interested
+    in.'''
+
     # set up given post_type
     if post_type == 'paid':
         bor_key = 'p_user'
@@ -75,22 +87,22 @@ def make_netdict(dicts, post_type='paid'):
         lend_key = 'author'
         amt_key = 'u_amt'
     else:
-        print("You must choose 'paid' or 'unpaid'! Try make_netdict again with one of those options.")
-        break
+        print("You must choose 'paid' or 'unpaid'! Try " +
+              "make_netdict again with one of those options.")
 
     # filter those that don't have a ptype and those that failed parsing
-    tmp_nice = [post for post in dicts if post_type in post
-                    and post['parseErr'] == False]
+    tmp_nice = [post for post in dicts if post_type in post and
+                not post['parseErr']]
     posts = [post for post in tmp_nice if post['ptype'] == post_type]
 
     # make a dictionary for each post, add it to the list
     for post in posts:
         currDict = {
-            'bor' : post[bor_key],
-            'lend' : post[lend_jey],
-            'amt' : post[amt_key],
-            'date' : post['date'],
-            'url' : post['url']
+            'bor': post[bor_key],
+            'lend': post[lend_jey],
+            'amt': post[amt_key],
+            'date': post['date'],
+            'url': post['url']
         }
         netdict.append(currDict)
 
@@ -102,13 +114,16 @@ def make_netdict(dicts, post_type='paid'):
 
 
 def load_graph(netdict):
-'''Takes a netdict that's in memory and puts it into a Gephi filein memory and on disk'''
+    '''Takes a netdict that's in memory and puts it into a
+    Gephi filein memory and on disk'''
+
     G = nx.DiGraph()
     for loan in netdict:
             if loan['amt'].isdigit():
                 tmp_amt = int(loan['amt'])
             else:
                 tmp_amt = 0
-            G.add_edge(loan['lend'], loan['bor'], amt = tmp_amt, date = loan['date'])
+            G.add_edge(loan['lend'], loan['bor'], amt=tmp_amt,
+                       date=loan['date'])
     nx.write_gexf(G, 'output_.gexf')
     return G

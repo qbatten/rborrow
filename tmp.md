@@ -1,12 +1,14 @@
-import lark
-import json
-
-
 grammar = r'''
             ptype: "["? REQ  _spacing r_amt _spacing r_loc _spacing  r_gen  _spacing ( r_type ( _spacing? r_misc? ( ")" | "]" )? )? )?
                  | "["? PAID _spacing p_user _spacing p_amt (_spacing (p_timing ( ")" | "]" )?)?)?
                  | _unpaid
                  | "["? META _spacing m_misc
+
+
+          _unpaid: _unpaid_good | _unpaid_bad
+   _unpaid_good.2: "["? UNPAID _spacing u_user _spacing u_amt _spacing (u_loc | u_timing) _spacing? (u_loc | u_timing)? _spacing? u_misc? ( ")" | "]" )?
+      _unpaid_bad: "["? UNPAID _spacing u_user _spacing u_loc _spacing u_amt _spacing? u_timing? _spacing? u_misc? ( ")" | "]" )?
+
 
         // Post Types
 
@@ -15,9 +17,7 @@ grammar = r'''
            UNPAID: "UNPAID"
             META :  "META"
 
-            _unpaid: _unpaid_good | _unpaid_bad
-            _unpaid_good.2: "["? UNPAID _spacing u_user _spacing u_amt _spacing (u_loc | u_timing) _spacing? (u_loc | u_timing)? _spacing? u_misc? ( ")" | "]" )?
-                _unpaid_bad: "["? UNPAID _spacing u_user _spacing u_loc _spacing u_amt _spacing? u_timing? _spacing? u_misc? ( ")" | "]" )?
+
         // Requests
 
             r_amt: _cash -> r_amt
@@ -112,32 +112,3 @@ grammar = r'''
                 %ignore "\\u00a3"
                 %ignore "\\u20ac"
 '''
-
-
-def treeToDict(t, out={}, tmpkey='ptype'):
-    '''Takes our Lark tree and turns it into a useful dict'''
-    if isinstance(t, lark.Tree):
-        for i, elem in enumerate(t.children):
-            tmpkey = t.data
-            treeToDict(elem, out, tmpkey)
-
-    else:
-        out[tmpkey] = t[:]
-
-    return out
-
-
-def parseTitle(to_parse):
-    '''Calls our grammar and parses the title, outputting a Lark tree'''
-    title_parser = lark.Lark(grammar, start="ptype")
-    out = treeToDict(title_parser.parse(to_parse), out={})
-    return out
-
-
-def readfile(fin="/Users/quinnbatten/Documents/Programming/PyProjects/" +
-                 "borrow/main1.json"):
-    ''' Generic JSON reader, defaults to calling the file that getdata() outputs
-    '''
-    with open(fin) as f:
-        vals = json.load(f)
-    return vals
