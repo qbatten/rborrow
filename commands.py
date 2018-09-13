@@ -40,12 +40,10 @@ def parse_indict(indict):
         currPost = {}
 
         # Parse titles
-        success = 0
         try:
             tmp = parseTitle(post['title'])
-            success = 1
         except Exception as inst:
-            try: tmp = parse_title_fallback(post['title'])
+            tmp = {'parseErr': str(inst)}
         else:
             currPost.update({'parseErr': False})
         finally:

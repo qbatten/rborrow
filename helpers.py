@@ -134,10 +134,15 @@ def parseTitle(to_parse):
     return out
 
 
+def parse_title_fallback(to_parse):
+    '''Fallback parser if first one fails'''
+
+
+
 def readfile(fin="/Users/quinnbatten/Documents/Programming/PyProjects/" +
                  "borrow/main1.json"):
     ''' Generic JSON reader, defaults to calling the file that getdata() outputs
     '''
-    with open(fin) as f:
+    with open(fin, 'r') as f:
         vals = json.load(f)
     return vals
