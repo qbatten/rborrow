@@ -83,9 +83,44 @@ def make_netdict(dicts):
 
 def parse_title_fallback(to_parse):
     '''Fallback parser if first one fails'''
-    amt_fail = False
+
+    # Grab ptype
+    ptype = False
+    if re.search(r'[\[\(]UNPAID\s*\$*[\]\)]', to_parse):
+        ptype = 'UNPAID'
+    elif re.search(r'[\[\(]Unpaid\s*\$*[\]\)]', to_parse):
+        ptype = 'UNPAID'
+    elif re.search(r'[\[\() ]unpaid\s*\$*[\]\)]', to_parse):
+        ptype = 'UNPAID'
+    elif re.search(r'[\(\[]PAID[\]\)]', to_parse):
+        ptype = 'PAID'
+    elif re.search(r'\[Paid\]', to_parse):
+        ptype = 'PAID'
+
+    # Grab user, replace username with nothing, to deal with usernames w nums
+    user = re.search(r'\/u\/[\w\d_-]+', to_parse)
+    if user:
+        to_parse = re.sub(r'\/u\/[\w\d_-]+', '', to_parse)
+    if not user:
+        user = re.search(r'u\/ ?[\w\d_-]+', to_parse)
+        if user:
+            to_parse = re.sub(r'u\/ ?[\w\d_-]+', '', to_parse)
+    if not user:
+        user = re.search(r'u\/ ?[\w\d_-]+', to_parse)
+        if user:
+            to_parse = re.sub(r'u\/ ?[\w\d_-]+', '', to_parse)
+    if not user:
+        user = re.search(r'[dD]\][ -,]+ ?[a-zA-Z_-]+', to_parse)
+        if user:
+            user = re.sub(r'[dD]\][ -,]+ ?', '', user)
+            to_parse = re.sub(r'[dD]\][ -,]+ ?[a-zA-Z_-]+', '', to_parse)
+    if not user:
+        user = False
+    else:
+        user = user[0].split('/')[-1]
 
     # Grab amount
+    amt_fail = False
     amt = re.search(r'[£\$][0-9,.]+', to_parse)
     if not amt:
         amt = re.search(r'[0-9,.]+', to_parse)
@@ -105,32 +140,6 @@ def parse_title_fallback(to_parse):
     except ValueError:
         amt_fail = amt
         amt = False
-
-    # Grab user
-    user = re.search(r'\/u\/[\w_-]+', to_parse)
-    if not user:
-        user = re.search(r'u\/ ?[\w_-]+', to_parse)
-    if not user:
-        user = re.search(r'u\/ ?[\w_-]+', to_parse)
-    if not user:
-        user = re.search(r'[dD]\][ -,]+ ?[a-zA-Z_-]+', to_parse)
-    if not user:
-        user = False
-    else:
-        user = user[0].split('/')[-1]
-
-    # Grab ptype
-    ptype = False
-    if re.search(r'[\[\(]UNPAID\s*\$*[\]\)]', to_parse):
-        ptype = 'UNPAID'
-    elif re.search(r'[\[\(]Unpaid\s*\$*[\]\)]', to_parse):
-        ptype = 'UNPAID'
-    elif re.search(r'[\[\() ]unpaid\s*\$*[\]\)]', to_parse):
-        ptype = 'UNPAID'
-    elif re.search(r'[\(\[]PAID[\]\)]', to_parse):
-        ptype = 'PAID'
-    elif re.search(r'\[Paid\]', to_parse):
-        ptype = 'PAID'
 
     # Fill output
     tmp = {'amt': amt,
