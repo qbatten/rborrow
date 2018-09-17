@@ -4,7 +4,7 @@
 
 There's a subreddit called "/r/borrow" where redditors can post asking to borrow money, and other redditors lend to them. I thnk that's pretty interesting, so I gathered as many posts as I could and made it all into a nice dataset containing information on ~15,000 loans. Then I made a network graph and performed some analysis of the data. This repository holds the code I wrote in order to do that, all of my results, and the dataset itself! 
 
-This project uses the pushshift.io API to download all available historical data for the subreddit "/r/borrow," then it parses out the post titles for paid and unpaid posts to determine important features of each loan. The parsed titles are collected and cleaned, producing a dataset containing 13,823 successful loans and 1,172 defaulted loans. Each loan has a date, the names of the borrower and the lender, and an amount (the principal). The subreddit deliberately keeps the interest amount private to the borrower and lender, so, sadly, I wasn't able to access that information. Still, the data is pretty interesting. A few quick facts:
+If you're interested in reading more, check out the Jupyter notebook in this repo ([here's a link to teh HTML export of the notebook](analysis/main_analysis.html). A few quick facts:
 - One lender has lent more than $300,000 in total over their whole /r/borrow lifetime (from here on, I'll call this the 'total lifetime lend/lending'. or 'total lifetime borrow/borrowing'.
 - There are 11 lenders who each have a total lifetime lend of over $50,000.
 - The majority of lenders have lent less than <$1,000 over their lifetime, but 20 lenders have given more than $100,000 in loans.
