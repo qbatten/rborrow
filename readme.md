@@ -1,29 +1,23 @@
 # Python /r/borrow scrape and analysis.
-There's a subreddit called "/r/borrow," where redditors can post asking to borrow money, and other redditors lend to them. I thnk that's kind of interesting, so I gathered as many posts as I could and made it all into a nice dataset containing 14,995 loans. Then I made some network graphs and getherd some basic stats on this data. This repository holds all the code I wrote in order to do that, all of my results, and the dataset itself! 
 
-(Note: This project isn't particularly wrapped up or finished, I'm still figuring out what exactly I want to do with this data. If you have any ideas or you want to talk, please get in touch!)
+[Network Graph of /r/borrow](gephi/graph_viz_1.svg)
+
+There's a subreddit called "/r/borrow" where redditors can post asking to borrow money, and other redditors lend to them. I thnk that's pretty interesting, so I gathered as many posts as I could and made it all into a nice dataset containing information on ~15,000 loans. Then I made a network graph and performed some analysis of the data. This repository holds the code I wrote in order to do that, all of my results, and the dataset itself! 
 
 This project uses the pushshift.io API to download all available historical data for the subreddit "/r/borrow," then it parses out the post titles for paid and unpaid posts to determine important features of each loan. The parsed titles are collected and cleaned, producing a dataset containing 13,823 successful loans and 1,172 defaulted loans. Each loan has a date, the names of the borrower and the lender, and an amount (the principal). The subreddit deliberately keeps the interest amount private to the borrower and lender, so, sadly, I wasn't able to access that information. Still, the data is pretty interesting. A few quick facts:
 - One lender has lent more than $300,000 in total over their whole /r/borrow lifetime (from here on, I'll call this the 'total lifetime lend/lending'. or 'total lifetime borrow/borrowing'.
 - There are 11 lenders who each have a total lifetime lend of over $50,000.
-- The majority of lenders have a total lifetime lend of <$1,000, and of those, the majority have a total lifetime lend of <$200.
-- Roughly $3 million has moved through /r/borrow over its lifetime (~$1 million each year)
+- The majority of lenders have lent less than <$1,000 over their lifetime, but 20 lenders have given more than $100,000 in loans.
 
 
 # What's in this repository?
-The most interesting thing in here is the data! Specifically, the file [netdict1.json](textfiles/netdict1.json). It contains data on 13,823 repaid loans on /r/borrow, in the form of a list of dictionaries ([netdict_unpaid_1.json](textfiles/netdict_unpaid_1.json) is the same type of file, but with all 1,172 defaulted loans). For each loan, I was able to parse out the borrower, the lender, the amount (principal), and the date. I also included the URL for each one, which makes it easy to iterate through and try to grab further information from the post using the Reddit API.
+There are a few different things in here:
+- The data: The full data set is in the folder titled 'data'. The files 'final_out.csv' and 'final_out.json' are the complete, parsed and cleaned data set in csv and json forms, respectively. If you just want to exlore this data on your own, check out those files. The 'raw... .json' files are the initial data downloaded form pushshift. The 'parsed[...].json' files are the raw files with data points obtained from parsing added on to every row. And, finally, the 'netdict_both.json' file contains the full data set in its final form, except for a few individual raws that have not been fixed. Those fixes are implemented in the Jupyter notebook described in the next list item.
+- The analysis: in the 'analysis' folder is a Jupyter Notebook that walks through the analysis work I've done and outputs some very pretty graphs (if I do say so myself).
+- The python files used to collect and process the data. in the 'data_processing' folder are two python files that contain the functions I used to collect, clean, and parse this data. These work perfectly well, but they're not production-ready. They're not really meant to be used by anyone else, and in particular... **please** do not run the `getdata_ps` function. It will fetch a lot of data from pushshift once again— that data is already available in this repo, and pushshift is basically someone's hobby project and is completely donation-supported. Best not to waste pushshift's resources.
+- The graph files: Finally, in the 'gephi' folder is a GEXF file, a Gephi workspace, and an exported SVG. These contain a network visualization of the final and complete data set. in the SVG and the Gephi workspace, I've applied a few visual distinctions: red edges are unpaid loans, green nodes are lenders (a user who has given at least 1 loan), and red nodes are borrowers. The green nodes (lenders) are scaled by the number of unique borrowers they have lent to.
 
-There are some python files in the main directory, but they're a bit messy. getdata.py contains the main code I used to download the data and parse the titles. It includes a program that pulls all available posts from the reddit API and one that pulls all available posts from pushshift.io  [^1]. If you're interested in how I parsed out important imformation from the title text, I used the lark-parser library, and the grammar I used is in helpers.py.
+# I like this / hate this / want to talk about this!
+Sweet! If you want to get in touch with me, please drop me a line at my website's contact page ([link here](https://www.quinnbatten.com/contact/)). I'd love to talk about this with you, and would be excited to hear, well, anything at all, including but not limited to: thoughts, criticism, suggested edits, areas of future research/work, and rants. 
 
-The 'textfiles' folder contains all the data I obtained, in its various forms (although they're all json files and each file is a list of dicts). Here's some naming conventions I used: 'ps' means it's from pushshift.io (aka these are the interesting ones), 'rapi' means it's from the Reddit API, 'out_raw' is, well, the raw, unprocessed data, as pushshift provided it. 'out_parsed' is the data after it's been run through my parser and simplified a bit, and 'netdict' is the final dataset as I exported it to Gephi using the networkx library. 
-
-The 'Gephi' folder contains a few Gephi workspaces and some exported images. I think [this network graph](Gephi/overall_borlend4_nolabel.svg), and [the same one, with labels,](Gephi/overall_borlend4_label.svg) are pretty cool. They show lenders as black nodes, scaled by total number of loans given, and borrowers as small green nodes.
-
-The 'notebooks' folder contains a Jupyter notebook where I gathered some preliminary stats about the dataset.
-
-
-
-
-
-***
-[^1]: I tried to get as many posts as possible using the reddit API and PRAW first, but Reddit recently made it very difficult to access any posts on a subreddit past the most recent 1000. You used to be able to sidestep their 1000-post-limit using a search by date, but they shut that down too! So, I turned to pushshift. The PRAW program works perfectly well, so I kept it in here just in case, but getdata.getdata_ps() is probably the more useful program, because of those reddit API limitations.
+If you want to post this somewhere, please ask me first— this is really meant to be a personal & portfolio project, and ideally, I'd love to have a conversation with you before it gets publicized in any way. Of course, it is out on the internet and I understand that might mean someone will go ahead and do something with this regardless of my desires.
