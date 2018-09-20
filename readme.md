@@ -1,6 +1,6 @@
 # Python /r/borrow scrape and analysis.
 
-[Network Graph of /r/borrow](gephi/graph_viz_1.svg)
+[Network Graph of /r/borrow](gephi/main.png)
 
 There's a subreddit called "/r/borrow" where redditors can post asking to borrow money, and other redditors lend to them. I thnk that's pretty interesting, so I gathered as many posts as I could and made it all into a nice dataset containing information on ~15,000 loans. Then I made a network graph and performed some analysis of the data. This repository holds the code I wrote in order to do that, all of my results, and the dataset itself! 
 
